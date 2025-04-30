@@ -13,10 +13,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "time_minutes", "price", "link"]
         read_only_fields = ["id"]
 
-    # def create(self, validated_data):
-    #     """Create and return a recipe."""
-    #     return Recipe.objects.create(**validated_data)
 
-    # def update(self, instance, validated_data):
-    #     """Update and return a recipe."""
-    #     return super().update(instance, validated_data)
+class RecipeDetailSerializer(RecipeSerializer):
+    """Serializer for recipe detail view."""
+
+    class Meta(RecipeSerializer.Meta):
+        fields = RecipeSerializer.Meta.fields + ["description"]
