@@ -61,7 +61,8 @@ class Recipe(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,  # removes all related objects when user is deleted
+        # CASCADE: removes all related objects when user is deleted
+        on_delete=models.CASCADE,
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
