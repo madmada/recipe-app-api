@@ -5,9 +5,11 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Tag
+from core.models import Tag, Recipe
 
 from recipe.serializers import TagSerializer
+
+from decimal import Decimal
 
 TAGS_URL = reverse("recipe:tag-list")
 
@@ -90,3 +92,47 @@ class PrivateTagsApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
+
+    def test_filter_tags_assigned_to_recipes(self):
+        """Test listing tags by those assigned to recipes."""
+        tag_breakfast = Tag.objects.create(user=self.user, name="Breakfast")
+        tag_lunch = Tag.objects.create(user=self.user, name="Lunch")
+        recipe = Recipe.objects.create(
+            title="Breakfast burrito",
+            time_minutes=10,
+            price=Decimal("5.00"),
+            user=self.user,
+        )
+        recipe.tags.add(tag_breakfast)
+
+        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+
+        serializer_breakfast = TagSerializer(tag_breakfast)
+        serializer_lunch = TagSerializer(tag_lunch)
+
+        self.assertIn(serializer_breakfast.data, res.data)
+        self.assertNotIn(serializer_lunch.data, res.data)
+
+    def test_filtered_tags_unique(self):
+        """Test filtered tags returns a unique list."""
+        tag_breakfast = Tag.objects.create(user=self.user, name="Breakfast")
+        Tag.objects.create(user=self.user, name="Lunch")
+        recipe_breakfast_burrito = Recipe.objects.create(
+            title="Breakfast burrito",
+            time_minutes=10,
+            price=Decimal("5.00"),
+            user=self.user,
+        )
+        recipe_pancakes = Recipe.objects.create(
+            title="Pancakes",
+            time_minutes=5,
+            price=Decimal("3.00"),
+            user=self.user,
+        )
+
+        recipe_breakfast_burrito.tags.add(tag_breakfast)
+        recipe_pancakes.tags.add(tag_breakfast)
+
+        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+
+        self.assertEqual(len(res.data), 1)
